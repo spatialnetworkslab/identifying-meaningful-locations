@@ -27,25 +27,19 @@ This repository contains the data and code for our paper:
 
 This repository contains all the data and code needed to reproduce the results and figures in our paper. Although we are not able to share the raw Twitter data publicly, the aggregated and de-identified Twitter dataset is found in `analysis/data/derived_data/`. The steps taken to produce this aggregated dataset can be found in:
 
-- [analysis/00a-remove-users.Rmd](analysis/00a-remove-users.md): Remove users with too few or too many data points. 
-- [analysis/00b-add-noise.Rmd](analysis/00b-add-noise.md): Add a small acount of noise to each user. 
-- [analysis/00c-geomasking.Rmd](analysis/00c-geomasking.md): Offset locations by a random distance (< 100 meters)
-- [analysis/00d-temporal-masking.Rmd](analysis/00d-temporal-masking.md): Shift timestamps by a random number of minutes and swap the day of the week witn a similar day (weekday or weekend)
-- [analysis/00e-aggregate-to-hex.Rmd](analysis/00e-aggregate-to-hex.md): Aggregate locations to 750m hexagonal grid cells
-- [analysis/00f-remove-grid-user.Rmd](analysis/00f-remove-grid-user.md): Remove grids visited by fewer than 5 people or users with inferred homes at grid(s) that have fewer than 5 inferred residential locations.
-
+- [analysis/00a-de-identification.Rmd](analysis/00a-de-identification.md): Workflow of de-identification approach
 
 The steps needed to recreate the figures found in the paper can be found in:
 
 - [analysis/01-figures-spatial-comparison-of-four-approaches.Rmd](analysis/01-figures-spatial-comparison-of-four-approaches.md): Geographical distributions of inferred home locations by four different approaches
 - [analysis/02-figures-spatial-view-of-shared-users.Rmd](analysis/02-figures-spatial-view-of-shared-users.md): Geographical distributions of tweets, unique users, inferred homes for shared users and actual residents in Singapore (2015)
-- [analysis/03-figures-correlation.Rmd](analysis/03-correlation.md): The correlation between the normalized number of inferred residents and the normalized number of actual residents in Singapore (2015).
+- [analysis/03-figures-correlation.Rmd](analysis/03-correlation.md): The correlation between the normalized number of inferred residents and the normalized number of actual residents in Singapore (2015)
 
 ### How to download or install
 
-You can download the compendium as a zip from from [this URL]().
+You can download the compendium as a zip from from [this URL](https://github.com/spatialnetworkslab/identifying-meaningful-locations/archive/master.zip).
 
-Or you can install this compendium as an R package, geographyoffashion, from GitHub with:
+Or you can install this compendium as an R package, identifyingmeaningfullocations, from GitHub with:
 
 ```{r installation, eval = FALSE}
 # install.packages("devtools")
