@@ -12,7 +12,7 @@ This repository contains the data and code for our paper:
 
 <!-- Our pre-print is online here: -->
 
-<!-- > Authors, (YYYY). _Identifying meaningful locations in human mobility data: an open-source R package as a framework for comparison and reproducibility_. Name of journal/book, Accessed 20 Jul 2020. Online at <https://doi.org/xxx/xxx> -->
+<!-- > Authors, (YYYY). _Identifying meaningful locations in human mobility data: an open-source R package as a framework for comparison and reproducibility_. Name of journal/book, Accessed 21 Jul 2020. Online at <https://doi.org/xxx/xxx> -->
 
 This repository contains all the data and code needed to reproduce the
 results and figures in our paper. Although we are not able to share the
@@ -26,12 +26,20 @@ produce this aggregated dataset can be found in:
 The steps needed to recreate the figures found in the paper can be found
 in:
 
+  - [analysis/01-identifying-home-locations.Rmd](analysis/01-identifying-home-locations.md):
+    Identifying home locations for users by using four built-in
+    ‘recipes’ in
+    [homelocator](https://github.com/spatialnetworkslab/homelocator)
+    package
+
   - [analysis/01-figures-spatial-comparison-of-four-approaches.Rmd](analysis/01-figures-spatial-comparison-of-four-approaches.md):
     Geographical distributions of inferred home locations by four
     different approaches
-  - [analysis/02-figures-spatial-view-of-shared-users.Rmd](analysis/02-figures-spatial-view-of-shared-users.md):
+
+  - [analysis/02-figures-spatial-view-of-same-hm-users.Rmd](analysis/02-figures-spatial-view-of-same-hm-users.md):
     Geographical distributions of tweets, unique users, inferred homes
-    for shared users and actual residents in Singapore (2015)
+    and actual residents in Singapore (2015)
+
   - [analysis/03-figures-correlation.Rmd](analysis/03-correlation.md):
     The correlation between the normalized number of inferred residents
     and the normalized number of actual residents in Singapore (2015)
