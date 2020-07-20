@@ -40,7 +40,7 @@ in:
     Geographical distributions of tweets, unique users, inferred homes
     and actual residents in Singapore (2015)
 
-  - [analysis/03-figures-correlation.Rmd](analysis/03-correlation.md):
+  - [analysis/03-figures-correlation.Rmd](analysis/03-figures-correlation.md):
     The correlation between the normalized number of inferred residents
     and the normalized number of actual residents in Singapore (2015)
 
