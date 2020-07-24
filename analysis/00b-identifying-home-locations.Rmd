@@ -1,15 +1,12 @@
 ---
 title: "Identifying home locations for users"
-author: "Chen Qingqing"
-date: "7/20/2020"
 output: github_document
 editor_options: 
   chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, eval = FALSE)
-library(homelocator)
+knitr::opts_chunk$set(echo = TRUE, eval = FALSE, message = FALSE)
 library(sf)
 library(tidyverse)
 library(here)
@@ -17,7 +14,11 @@ library(here)
 
 ## Identifying home locations for users 
 
-To identify home locations for users, we use four built-in "recipes" in [homelocator](https://github.com/spatialnetworkslab/homelocator) package.  
+To identify home locations for users, we use four built-in recipes from `homelocator` package. 
+
+```{r eval=TRUE, message=TRUE}
+library(homelocator)
+```
 
 
 ### Load de-identified dataset 

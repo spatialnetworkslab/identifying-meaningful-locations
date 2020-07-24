@@ -1,13 +1,16 @@
 Identifying home locations for users
 ================
-Chen Qingqing
-7/20/2020
 
 ## Identifying home locations for users
 
-To identify home locations for users, we use four built-in “recipes” in
-[homelocator](https://github.com/spatialnetworkslab/homelocator)
-package.
+To identify home locations for users, we use four built-in recipes from
+`homelocator` package.
+
+``` r
+library(homelocator)
+```
+
+    ## Welcome to homelocator package!
 
 ### Load de-identified dataset
 

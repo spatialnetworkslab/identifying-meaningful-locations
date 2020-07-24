@@ -1,7 +1,5 @@
 Spatial views
 ================
-Chen Qingqing
-7/20/2020
 
 ## Load dataset
 
@@ -11,6 +9,9 @@ df <- readRDS(here("analysis/data/derived_data/data_anonymized.rds"))
 
 #load grid cells 
 grids <- readRDS(here("analysis/data/derived_data/grid_750.rds"))
+
+#load central region 
+df_central_region <- read_sf(here("analysis/data/raw_data/central_region/central_region.shp")) 
 
 #load inferred home locations 
 hm_apdm <- readRDS(here("analysis/data/derived_data/hm_apdm.rds")) %>% mutate(name = "APDM")
@@ -22,14 +23,14 @@ head(hm_all)
 ```
 
     ## # A tibble: 6 x 3
-    ##   u_id      home name 
-    ##   <chr>    <int> <chr>
-    ## 1 52426211   849 APDM 
-    ## 2 67154109  1852 APDM 
-    ## 3 378636    1126 APDM 
-    ## 4 12273017  1067 APDM 
-    ## 5 13647376  1475 APDM 
-    ## 6 61604221   759 APDM
+    ##   u_id     home  name 
+    ##   <chr>    <chr> <chr>
+    ## 1 52426211 849   APDM 
+    ## 2 67154109 1852  APDM 
+    ## 3 378636   1126  APDM 
+    ## 4 12273017 1067  APDM 
+    ## 5 13647376 1475  APDM 
+    ## 6 61604221 759   APDM
 
 ## Spatial views
 
@@ -71,7 +72,9 @@ hm_same_users <- hm_all %>%
   filter(u_id %in% same_hm_users) %>% 
   dplyr::select(-name) %>% 
   unique()
+
 norm_home_users <- hm_same_users %>% 
+  mutate(home = as.numeric(home)) %>% 
   group_by(home) %>% 
   summarise(n_users_home = n_distinct(u_id)) %>% 
   mutate(norm_n_users_home = (n_users_home - min(n_users_home))/(max(n_users_home)-min(n_users_home))) %>%
@@ -91,16 +94,17 @@ pop2015 <- read_sf(here("analysis/data/raw_data/pop2015/PLAN_BDY_DWELLING_TYPE_2
 ### Geographical distribution of number of tweets (normalized)
 
 ``` r
-map_view <- function(grids, df_normalized, var_fill, legend.nm){
-  tm_shape(grids) + 
-  tm_borders(col = "grey") + 
-  tm_shape(df_normalized) +
-  tm_fill(var_fill, 
-          palette = "YlOrRd",
-          n = 8, style = "fisher", 
-          legend.hist = TRUE,
-          title = legend.nm) +
-  tm_layout(title.position = c("left", "top"),
+map_view <- function(grids, df_normalized, var_fill, df_central, legend.nm, show_central = F){
+  tm_basic <- tm_shape(grids) + 
+    tm_borders(col = "grey") + 
+    tm_shape(df_normalized) +
+    tm_fill(var_fill, 
+            palette = "YlOrRd",
+            n = 8, style = "fisher", 
+            legend.hist = TRUE,
+            title = legend.nm)
+  
+  tm_adjust <- tm_layout(title.position = c("left", "top"),
             title.size = 0.7,
             legend.outside = F,
             legend.position = c("right", "bottom"),
@@ -109,6 +113,15 @@ map_view <- function(grids, df_normalized, var_fill, legend.nm){
             legend.hist.height = 0.1,
             legend.hist.width = 0.3,
             legend.hist.size = 0.5)
+  if(show_central){
+    tm_basic + 
+      tm_shape(df_central) + 
+      tm_borders(col = "black", lty = 2) +
+      tm_adjust
+  } else{
+    tm_basic +
+      tm_adjust
+  }
 }
 ```
 
@@ -121,7 +134,7 @@ map_view(grids, norm_tweets, var_fill = "norm_n_tweets", legend.nm = "Normalized
 ### Geographical distribution of number of unique users (normalized)
 
 ``` r
-map_view(grids, norm_users, var_fill = "norm_n_users", legend.nm = "Normalized # of unique users")
+map_view(grids, norm_users, var_fill = "norm_n_users", df_central_region, legend.nm = "Normalized # of unique users", show_central = T)
 ```
 
 <img src="02-figures-spatial-view-of-same-hm-users_files/figure-gfm/unnamed-chunk-7-1.png" style="display: block; margin: auto;" />

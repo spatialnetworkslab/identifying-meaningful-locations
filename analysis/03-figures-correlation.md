@@ -1,7 +1,5 @@
 The correlation between inferred residents and actual residents
 ================
-Chen Qingqing
-7/20/2020
 
 ## Residents in Singapore 2015
 
@@ -38,6 +36,7 @@ same_hm_users <- hm_all %>%
   pull(u_id)
 
 hm_same_users <- hm_all %>% 
+  mutate(home = as.numeric(home)) %>% 
   filter(u_id %in% same_hm_users) %>% 
   dplyr::select(-name) %>% 
   unique() %>% 

@@ -1,6 +1,5 @@
 ---
 title: "Workflow of de-identification approach"
-date: "7/20/2020"
 output: github_document
 editor_options: 
   chunk_output_type: console

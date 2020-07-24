@@ -1,6 +1,5 @@
 Workflow of de-identification approach
 ================
-7/20/2020
 
 We are cognizant that the use of LBS data, and inferring meaningful
 locations in particular, brings forward specific privacy considerations

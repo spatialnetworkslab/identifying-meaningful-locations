@@ -1,7 +1,5 @@
 ---
 title: "The correlation between inferred residents and actual residents"
-author: "Chen Qingqing"
-date: "7/20/2020"
 output: github_document
 ---
 
@@ -50,6 +48,7 @@ same_hm_users <- hm_all %>%
   pull(u_id)
 
 hm_same_users <- hm_all %>% 
+  mutate(home = as.numeric(home)) %>% 
   filter(u_id %in% same_hm_users) %>% 
   dplyr::select(-name) %>% 
   unique() %>% 
@@ -88,4 +87,3 @@ ggscatter(norm_residents, x = "norm_n_inferred_residents", y = "norm_n_actual_re
   labs(x = "Normalized number of inferred residents",
        y = "Normalized number of actual residents")
 ```
-
