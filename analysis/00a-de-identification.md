@@ -1,6 +1,5 @@
 Workflow of de-identification approach
 ================
-Chen Qingqing
 7/20/2020
 
 We are cognizant that the use of LBS data, and inferring meaningful
@@ -20,8 +19,8 @@ data.
 ## Load dataset
 
 ``` r
-# load original dataset 
-df <- readRDS(here("analysis/data/raw_data/data_original.rds")) %>% 
+# load your original dataset 
+df <- readRDS("path_to_original_dataset") %>% 
   dplyr::select(u_id, created_at, lon, lat)  # only keep essential information
 
 # nest dataset by user 
@@ -170,7 +169,16 @@ grids <- read_sf(here("analysis/data/raw_data/Shp/MP14_SUBZONE_NO_SEA_PL.shp")) 
   st_make_grid(., cellsize = 750, square = F) %>% # generate 750m grid cells 
   st_sf() %>% 
   rowid_to_column("grid_id")
+```
 
+The generated hexagonal grids dataset is in
+`analysis/data/derived_data`.
+
+``` r
+saveRDS(grids, file = here("analysis/data/derived_data/grid_750.rds"))
+```
+
+``` r
 offset_point <- function(point){
   #create 100m buffer for a geom point and get 1 random sample within the buffer 
   random_pt <- point %>% 
@@ -205,7 +213,7 @@ geomasking <- function(user_id, user_data){
 df_nested <- do.call(rbind, map2(df_nested$u_id, df_nested$data, with_progress(function(x, y) geomasking(x, y))))
 ```
 
-## Step 9:
+## Step 9: Remove grids with too few users
 
 Remove grids with fewer than 5 visted users.
 
@@ -218,6 +226,48 @@ df <- df_nested %>%
   ungroup() %>% 
   filter(n_user >= 5 & n_tweets >= 5) %>% 
   dplyr::select(-c(n_user, n_tweets))
+```
+
+## Step 10: Remove users at grids that have fewer than 5 residents
+
+``` r
+#load inferred home locations 
+hm_apdm <- readRDS(here("analysis/data/derived_data/hm_apdm.rds")) %>% mutate(name = "APDM")
+hm_freq <- readRDS(here("analysis/data/derived_data/hm_freq.rds")) %>% mutate(name = "FREQ")
+hm_hmlc <- readRDS(here("analysis/data/derived_data/hm_hmlc.rds")) %>% mutate(name = "HMLC")
+hm_osna <- readRDS(here("analysis/data/derived_data/hm_osna.rds")) %>% mutate(name = "OSNA")
+hm_all <- bind_rows(hm_apdm, hm_freq, hm_hmlc, hm_osna)
+
+#home grids that have fewer than 5 users 
+rm_hm_grids <- hm_all %>% 
+  group_by(home,name) %>% 
+  dplyr::summarise(n_user = n_distinct(u_id)) %>% 
+  filter(n_user < 5) %>% 
+  group_by(name) %>% 
+  nest() %>% 
+  mutate(hm = map(data, function(x) x$home)) %>% 
+  ungroup()
+
+# extract users whose homes are within these hm grids 
+get_rm_users <- function(df_home, method_nm, df_rm_hm_grids){
+  rm_grids <- df_rm_hm_grids %>% 
+    filter(name == method_nm) %>% 
+    pull(hm) %>% 
+    unlist() %>% 
+    unique()
+  df_home %>% 
+    filter(home %in% rm_grids) %>% 
+    pull(u_id) %>% 
+    unique()
+}
+
+rm_users <- map2(list(hm_osna, hm_hmlc, hm_apdm, hm_freq), list("OSNA", "HMLC", "APDM", "FREQ"), 
+                 function(x, y) get_rm_users(x, y, rm_hm_grids)) %>% 
+  unlist() %>% 
+  unique()
+
+# remove extracted users from dataset 
+df <- df %>% filter(!u_id %in% rm_users)
 ```
 
 The de-identified dataset is in `analysis/data/derived_data`.
