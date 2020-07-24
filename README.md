@@ -3,10 +3,10 @@
 
 This repository contains the data and code for our paper:
 
-> Chen, QQ and Poorthuis, A (2020). *Identifying meaningful locations in
-> human mobility data: an open-source R package as a framework for
-> comparison and reproducibility*. International Journal of Geographical
-> Information Science
+> *Identifying meaningful locations in human mobility data: an
+> open-source R package as a framework for comparison and
+> reproducibility*. International Journal of Geographical Information
+> Science
 
 This repository contains all the data and code needed to reproduce the
 results and figures in our paper. Although we are not able to share the

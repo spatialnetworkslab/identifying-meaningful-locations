@@ -17,7 +17,7 @@ Title <- "Identifying meaningful locations in human mobility data: an open-sourc
 
 This repository contains the data and code for our paper:
 
-> Chen, QQ and Poorthuis, A (2020). _`r Title`_. International Journal of Geographical Information Science
+>  _`r Title`_. International Journal of Geographical Information Science
 
 This repository contains all the data and code needed to reproduce the results and figures in our paper. Although we are not able to share the raw Twitter data publicly, the aggregated and de-identified Twitter dataset is found in `analysis/data/derived_data/`. The steps taken to produce this aggregated dataset can be found in:
 
