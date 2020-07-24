@@ -3,3 +3,4 @@
 .RData
 .Ruserdata
 analysis/data
+.DS_Store
