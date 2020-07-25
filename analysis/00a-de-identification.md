@@ -34,13 +34,8 @@ df_nested <- df %>%
 Replace original user IDs with random generated numbers.
 
 ``` r
-#generate random number to replace the user IDs
-generate_random_number <- function(df) {
-  floor(runif(nrow(df), min = 1, max = 100000000))
-}
-
 df_nested <- df_nested %>% 
-  mutate(u_id = generate_random_number(.) %>% as.character())
+  mutate(u_id = sample(1:100000000, n(), replace = FALSE))
 ```
 
 ## Step 2: Remove users with too few data points
@@ -162,10 +157,10 @@ aggregated to 750 hexagoral grid cells.
 
 ``` r
 #generate aggregated grid cells 
-grids <- read_sf(here("analysis/data/raw_data/Shp/MP14_SUBZONE_NO_SEA_PL.shp")) %>% # read sg map
+grids <- st_read(here("analysis/data/raw_data/MP14_SUBZONE_NO_SEA_PL.shp"), quiet = T) %>% # read Singapore map
   st_transform(., crs = 3414) %>% 
   st_make_valid() %>% 
-  st_make_grid(., cellsize = 750, square = F) %>% # generate 750m grid cells 
+  st_make_grid(., cellsize = 750, square = F) %>% # generate 750m hexagonal grid cells 
   st_sf() %>% 
   rowid_to_column("grid_id")
 ```
@@ -174,7 +169,7 @@ The generated hexagonal grids dataset is in
 `analysis/data/derived_data`.
 
 ``` r
-saveRDS(grids, file = here("analysis/data/derived_data/grid_750.rds"))
+st_write(grids, here("analysis/data/derived_data/spatial_hex_grid.shp"))
 ```
 
 ``` r
@@ -231,10 +226,10 @@ df <- df_nested %>%
 
 ``` r
 #load inferred home locations 
-hm_apdm <- readRDS(here("analysis/data/derived_data/hm_apdm.rds")) %>% mutate(name = "APDM")
-hm_freq <- readRDS(here("analysis/data/derived_data/hm_freq.rds")) %>% mutate(name = "FREQ")
-hm_hmlc <- readRDS(here("analysis/data/derived_data/hm_hmlc.rds")) %>% mutate(name = "HMLC")
-hm_osna <- readRDS(here("analysis/data/derived_data/hm_osna.rds")) %>% mutate(name = "OSNA")
+hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm.csv")) %>% mutate(name = "APDM")
+hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq.csv")) %>% mutate(name = "FREQ")
+hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc.csv")) %>% mutate(name = "HMLC")
+hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna.csv")) %>% mutate(name = "OSNA")
 hm_all <- bind_rows(hm_apdm, hm_freq, hm_hmlc, hm_osna)
 
 #home grids that have fewer than 5 users 
@@ -273,5 +268,5 @@ The de-identified dataset is in `analysis/data/derived_data`.
 
 ``` r
 #save de-identified dataset 
-saveRDS(df, file = here("analysis/data/derived_data/data_anonymized.rds"))
+write_csv(df, file = here("analysis/data/derived_data/deidentified_data.csv"))
 ```
