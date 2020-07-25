@@ -4,7 +4,7 @@ output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 library(sf)
 library(tidyverse)
 library(here)
@@ -14,29 +14,29 @@ library(tmap)
 
 ## Load dataset 
 
-
 ### Load grid cells 
 
 ```{r grids}
 #grids 
-grids <- readRDS(here("analysis/data/derived_data/grid_750.rds"))
+grids <- st_read(here("analysis/data/derived_data/spatial_hex_grid.shp"), quiet = T) %>% 
+  st_transform(crs = 3414)
 head(grids)
 ```
 
 ### Load de-identified dataset
 ```{r dataset}
 #de-identified dataset 
-df <- readRDS(here("analysis/data/derived_data/data_anonymized.rds"))
+df <- read_csv(here("analysis/data/derived_data/deidentified_data.csv"))
 head(df)
 ```
 
 ### Load inferred home locations 
 ```{r homes}
 #load inferred home locations of four approaches 
-hm_apdm <- readRDS(here("analysis/data/derived_data/hm_apdm.rds")) %>% mutate(name = "APDM")
-hm_freq <- readRDS(here("analysis/data/derived_data/hm_freq.rds")) %>% mutate(name = "FREQ")
-hm_hmlc <- readRDS(here("analysis/data/derived_data/hm_hmlc.rds")) %>% mutate(name = "HMLC")
-hm_osna <- readRDS(here("analysis/data/derived_data/hm_osna.rds")) %>% mutate(name = "OSNA")
+hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm.csv")) %>% mutate(name = "APDM")
+hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq.csv")) %>% mutate(name = "FREQ")
+hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc.csv")) %>% mutate(name = "HMLC")
+hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna.csv")) %>% mutate(name = "OSNA")
 hm_all <- bind_rows(hm_apdm, hm_freq, hm_hmlc, hm_osna)
 head(hm_all)
 ```
@@ -78,7 +78,7 @@ cal_OR <- function(df_hm, df, grids){
   #calculate Odds Ratio
   df_OR <- df_users_grids %>% 
     left_join(., (df_hm_updated %>% select(-name)), by = c("u_id" = "u_id")) %>% 
-    replace(., is.na(.), "0") %>% 
+    replace(., is.na(.), 0) %>% 
     mutate(type = if_else(grid_id == home, "local", "visitor")) %>% 
     group_by(grid_id, type) %>% 
     dplyr::summarise(n_user = n_distinct(u_id)) %>% 
@@ -88,9 +88,7 @@ cal_OR <- function(df_hm, df, grids){
     filter(grid_id %in% df_hm_updated$home) %>% 
     mutate(total_local = sum(local), 
            total_visitor = sum(visitor)) %>% 
-    mutate(OR = (local/total_local)/(visitor/total_visitor)) %>% 
-    left_join(., grids) %>% 
-    st_as_sf()
+    mutate(OR = (local/total_local)/(visitor/total_visitor)) 
   return(df_OR)
 }
 ```
@@ -98,37 +96,43 @@ cal_OR <- function(df_hm, df, grids){
 The calculated odds ratios are in `analysis/data/derived_data`.
 ```{r odds-ratio}
 #APDM
-if(file.exists(here("analysis/data/derived_data/OR_apdm.rds"))){
-  OR_apdm <- readRDS(here("analysis/data/derived_data/OR_apdm.rds"))
+if(file.exists(here("analysis/data/derived_data/OR_apdm.csv"))){
+  OR_apdm <- read_csv(here("analysis/data/derived_data/OR_apdm.csv"))
 } else{
   OR_apdm <- cal_OR(hm_apdm, df, grids)
-  saveRDS(OR_apdm, file = here("analysis/data/derived_data/OR_apdm.rds"))
+  write_csv(OR_apdm, path = here("analysis/data/derived_data/OR_apdm.csv"))
 }
 
 #FREQ
-if(file.exists(here("analysis/data/derived_data/OR_freq.rds"))){
-  OR_freq <- readRDS(here("analysis/data/derived_data/OR_freq.rds"))
+if(file.exists(here("analysis/data/derived_data/OR_freq.csv"))){
+  OR_freq <- read_csv(here("analysis/data/derived_data/OR_freq.csv"))
 } else{
   OR_freq <- cal_OR(hm_freq, df, grids)
-  saveRDS(OR_freq, file = here("analysis/data/derived_data/OR_freq.rds"))
+  write_csv(OR_freq, path = here("analysis/data/derived_data/OR_freq.csv"))
 }
 
 #HMLC
-if(file.exists(here("analysis/data/derived_data/OR_hmlc.rds"))){
-  OR_hmlc <- readRDS(here("analysis/data/derived_data/OR_hmlc.rds"))
+if(file.exists(here("analysis/data/derived_data/OR_hmlc.csv"))){
+  OR_hmlc <- read_csv(here("analysis/data/derived_data/OR_hmlc.csv"))
 } else{
   OR_hmlc <- cal_OR(hm_hmlc, df, grids)
-  saveRDS(OR_hmlc, file = here("analysis/data/derived_data/OR_hmlc.rds"))
+  write_csv(OR_hmlc, path = here("analysis/data/derived_data/OR_hmlc.csv"))
 }
 
 
 #OSNA
-if(file.exists(here("analysis/data/derived_data/OR_osna.rds"))){
-  OR_osna <- readRDS(here("analysis/data/derived_data/OR_osna.rds"))
+if(file.exists(here("analysis/data/derived_data/OR_osna.csv"))){
+  OR_osna <- read_csv(here("analysis/data/derived_data/OR_osna.csv"))
 } else{
   OR_osna <- cal_OR(hm_osna, df, grids)
-  saveRDS(OR_osna, file = here("analysis/data/derived_data/OR_osna.rds"))
+  write_csv(OR_osna, path = here("analysis/data/derived_data/OR_osna.csv"))
 }
+
+## convert to sf object
+OR_apdm <- OR_apdm %>% left_join(., grids) %>% st_as_sf()
+OR_freq <- OR_freq %>% left_join(., grids) %>% st_as_sf()
+OR_hmlc <- OR_hmlc %>% left_join(., grids) %>% st_as_sf()
+OR_osna <- OR_osna %>% left_join(., grids) %>% st_as_sf()
 ```
 
 ### Geospatial distribution of inferred home locations

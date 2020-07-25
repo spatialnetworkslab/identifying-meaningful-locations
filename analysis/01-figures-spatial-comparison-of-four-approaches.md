@@ -7,7 +7,8 @@ Spatial comparison of four approaches
 
 ``` r
 #grids 
-grids <- readRDS(here("analysis/data/derived_data/grid_750.rds"))
+grids <- st_read(here("analysis/data/derived_data/spatial_hex_grid.shp"), quiet = T) %>% 
+  st_transform(crs = 3414)
 head(grids)
 ```
 
@@ -16,7 +17,7 @@ head(grids)
     ## dimension:      XY
     ## bbox:           xmin: 15792.54 ymin: 15315.71 xmax: 18417.54 ymax: 17480.77
     ## CRS:            EPSG:3414
-    ##   grid_id                              .
+    ##   grid_id                       geometry
     ## 1       1 POLYGON ((17292.54 15965.23...
     ## 2       2 POLYGON ((16917.54 16614.75...
     ## 3       3 POLYGON ((17667.54 16614.75...
@@ -28,41 +29,41 @@ head(grids)
 
 ``` r
 #de-identified dataset 
-df <- readRDS(here("analysis/data/derived_data/data_anonymized.rds"))
+df <- read_csv(here("analysis/data/derived_data/deidentified_data.csv"))
 head(df)
 ```
 
     ## # A tibble: 6 x 3
-    ##   u_id     created_at          grid_id
-    ##   <chr>    <dttm>                <int>
-    ## 1 91936517 2012-09-13 22:25:29     847
-    ## 2 84741080 2014-09-02 15:06:17     849
-    ## 3 6853424  2013-02-28 21:40:09    1298
-    ## 4 87242469 2014-09-22 10:56:12     747
-    ## 5 41544838 2012-11-25 17:56:41    1319
-    ## 6 87701679 2014-02-09 06:04:24    1075
+    ##       u_id created_at          grid_id
+    ##      <dbl> <dttm>                <dbl>
+    ## 1 33677220 2016-03-24 07:01:53     478
+    ## 2 83769538 2014-01-27 07:10:07    1783
+    ## 3 38521033 2013-06-16 05:21:43     949
+    ## 4 88243722 2012-07-23 02:33:23    1295
+    ## 5 41751665 2013-07-06 01:27:50     523
+    ## 6 36532412 2013-10-12 18:46:27     634
 
 ### Load inferred home locations
 
 ``` r
 #load inferred home locations of four approaches 
-hm_apdm <- readRDS(here("analysis/data/derived_data/hm_apdm.rds")) %>% mutate(name = "APDM")
-hm_freq <- readRDS(here("analysis/data/derived_data/hm_freq.rds")) %>% mutate(name = "FREQ")
-hm_hmlc <- readRDS(here("analysis/data/derived_data/hm_hmlc.rds")) %>% mutate(name = "HMLC")
-hm_osna <- readRDS(here("analysis/data/derived_data/hm_osna.rds")) %>% mutate(name = "OSNA")
+hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm.csv")) %>% mutate(name = "APDM")
+hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq.csv")) %>% mutate(name = "FREQ")
+hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc.csv")) %>% mutate(name = "HMLC")
+hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna.csv")) %>% mutate(name = "OSNA")
 hm_all <- bind_rows(hm_apdm, hm_freq, hm_hmlc, hm_osna)
 head(hm_all)
 ```
 
     ## # A tibble: 6 x 3
-    ##   u_id     home  name 
-    ##   <chr>    <chr> <chr>
-    ## 1 52426211 849   APDM 
-    ## 2 67154109 1852  APDM 
-    ## 3 378636   1126  APDM 
-    ## 4 12273017 1067  APDM 
-    ## 5 13647376 1475  APDM 
-    ## 6 61604221 759   APDM
+    ##       u_id  home name 
+    ##      <dbl> <dbl> <chr>
+    ## 1  3191716   849 APDM 
+    ## 2  4408429  1852 APDM 
+    ## 3 71391177  1126 APDM 
+    ## 4 18690315  1067 APDM 
+    ## 5 19578598  1475 APDM 
+    ## 6 64822321   759 APDM
 
 ### Calculate odds ratio
 
@@ -101,7 +102,7 @@ cal_OR <- function(df_hm, df, grids){
   #calculate Odds Ratio
   df_OR <- df_users_grids %>% 
     left_join(., (df_hm_updated %>% select(-name)), by = c("u_id" = "u_id")) %>% 
-    replace(., is.na(.), "0") %>% 
+    replace(., is.na(.), 0) %>% 
     mutate(type = if_else(grid_id == home, "local", "visitor")) %>% 
     group_by(grid_id, type) %>% 
     dplyr::summarise(n_user = n_distinct(u_id)) %>% 
@@ -111,9 +112,7 @@ cal_OR <- function(df_hm, df, grids){
     filter(grid_id %in% df_hm_updated$home) %>% 
     mutate(total_local = sum(local), 
            total_visitor = sum(visitor)) %>% 
-    mutate(OR = (local/total_local)/(visitor/total_visitor)) %>% 
-    left_join(., grids) %>% 
-    st_as_sf()
+    mutate(OR = (local/total_local)/(visitor/total_visitor)) 
   return(df_OR)
 }
 ```
@@ -122,37 +121,43 @@ The calculated odds ratios are in `analysis/data/derived_data`.
 
 ``` r
 #APDM
-if(file.exists(here("analysis/data/derived_data/OR_apdm.rds"))){
-  OR_apdm <- readRDS(here("analysis/data/derived_data/OR_apdm.rds"))
+if(file.exists(here("analysis/data/derived_data/OR_apdm.csv"))){
+  OR_apdm <- read_csv(here("analysis/data/derived_data/OR_apdm.csv"))
 } else{
   OR_apdm <- cal_OR(hm_apdm, df, grids)
-  saveRDS(OR_apdm, file = here("analysis/data/derived_data/OR_apdm.rds"))
+  write_csv(OR_apdm, path = here("analysis/data/derived_data/OR_apdm.csv"))
 }
 
 #FREQ
-if(file.exists(here("analysis/data/derived_data/OR_freq.rds"))){
-  OR_freq <- readRDS(here("analysis/data/derived_data/OR_freq.rds"))
+if(file.exists(here("analysis/data/derived_data/OR_freq.csv"))){
+  OR_freq <- read_csv(here("analysis/data/derived_data/OR_freq.csv"))
 } else{
   OR_freq <- cal_OR(hm_freq, df, grids)
-  saveRDS(OR_freq, file = here("analysis/data/derived_data/OR_freq.rds"))
+  write_csv(OR_freq, path = here("analysis/data/derived_data/OR_freq.csv"))
 }
 
 #HMLC
-if(file.exists(here("analysis/data/derived_data/OR_hmlc.rds"))){
-  OR_hmlc <- readRDS(here("analysis/data/derived_data/OR_hmlc.rds"))
+if(file.exists(here("analysis/data/derived_data/OR_hmlc.csv"))){
+  OR_hmlc <- read_csv(here("analysis/data/derived_data/OR_hmlc.csv"))
 } else{
   OR_hmlc <- cal_OR(hm_hmlc, df, grids)
-  saveRDS(OR_hmlc, file = here("analysis/data/derived_data/OR_hmlc.rds"))
+  write_csv(OR_hmlc, path = here("analysis/data/derived_data/OR_hmlc.csv"))
 }
 
 
 #OSNA
-if(file.exists(here("analysis/data/derived_data/OR_osna.rds"))){
-  OR_osna <- readRDS(here("analysis/data/derived_data/OR_osna.rds"))
+if(file.exists(here("analysis/data/derived_data/OR_osna.csv"))){
+  OR_osna <- read_csv(here("analysis/data/derived_data/OR_osna.csv"))
 } else{
   OR_osna <- cal_OR(hm_osna, df, grids)
-  saveRDS(OR_osna, file = here("analysis/data/derived_data/OR_osna.rds"))
+  write_csv(OR_osna, path = here("analysis/data/derived_data/OR_osna.csv"))
 }
+
+## convert to sf object
+OR_apdm <- OR_apdm %>% left_join(., grids) %>% st_as_sf()
+OR_freq <- OR_freq %>% left_join(., grids) %>% st_as_sf()
+OR_hmlc <- OR_hmlc %>% left_join(., grids) %>% st_as_sf()
+OR_osna <- OR_osna %>% left_join(., grids) %>% st_as_sf()
 ```
 
 ### Geospatial distribution of inferred home locations

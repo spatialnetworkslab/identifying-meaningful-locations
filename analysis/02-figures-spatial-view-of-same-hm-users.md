@@ -5,32 +5,33 @@ Spatial views
 
 ``` r
 #load de-identified dataset
-df <- readRDS(here("analysis/data/derived_data/data_anonymized.rds"))
+df <- read_csv(here("analysis/data/derived_data/deidentified_data.csv"))
 
 #load grid cells 
-grids <- readRDS(here("analysis/data/derived_data/grid_750.rds"))
+grids <-  st_read(here("analysis/data/derived_data/spatial_hex_grid.shp"), quiet = T) %>% 
+  st_transform(crs = 3414)
 
 #load central region 
-df_central_region <- read_sf(here("analysis/data/raw_data/central_region/central_region.shp")) 
+df_central_region <- st_read(here("analysis/data/raw_data/central_region.shp"), quiet = T) 
 
 #load inferred home locations 
-hm_apdm <- readRDS(here("analysis/data/derived_data/hm_apdm.rds")) %>% mutate(name = "APDM")
-hm_freq <- readRDS(here("analysis/data/derived_data/hm_freq.rds")) %>% mutate(name = "FREQ")
-hm_hmlc <- readRDS(here("analysis/data/derived_data/hm_hmlc.rds")) %>% mutate(name = "HMLC")
-hm_osna <- readRDS(here("analysis/data/derived_data/hm_osna.rds")) %>% mutate(name = "OSNA")
+hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm.csv")) %>% mutate(name = "APDM")
+hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq.csv")) %>% mutate(name = "FREQ")
+hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc.csv")) %>% mutate(name = "HMLC")
+hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna.csv")) %>% mutate(name = "OSNA")
 hm_all <- bind_rows(hm_apdm, hm_freq, hm_hmlc, hm_osna)
 head(hm_all)
 ```
 
     ## # A tibble: 6 x 3
-    ##   u_id     home  name 
-    ##   <chr>    <chr> <chr>
-    ## 1 52426211 849   APDM 
-    ## 2 67154109 1852  APDM 
-    ## 3 378636   1126  APDM 
-    ## 4 12273017 1067  APDM 
-    ## 5 13647376 1475  APDM 
-    ## 6 61604221 759   APDM
+    ##       u_id  home name 
+    ##      <dbl> <dbl> <chr>
+    ## 1  3191716   849 APDM 
+    ## 2  4408429  1852 APDM 
+    ## 3 71391177  1126 APDM 
+    ## 4 18690315  1067 APDM 
+    ## 5 19578598  1475 APDM 
+    ## 6 64822321   759 APDM
 
 ## Spatial views
 
@@ -86,7 +87,7 @@ norm_home_users <- hm_same_users %>%
 
 ``` r
 #residents in Singapore 2015
-pop2015 <- read_sf(here("analysis/data/raw_data/pop2015/PLAN_BDY_DWELLING_TYPE_2015.shp")) %>%
+pop2015 <- st_read(here("analysis/data/raw_data/PLAN_BDY_DWELLING_TYPE_2015.shp"), quiet = T) %>%
   st_transform(., crs = 3414) %>% 
   st_make_valid()
 ```

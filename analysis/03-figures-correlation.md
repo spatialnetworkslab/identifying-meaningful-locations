@@ -5,7 +5,7 @@ The correlation between inferred residents and actual residents
 
 ``` r
 #residents in Singapore 2015
-pop2015 <- read_sf(here("analysis/data/raw_data/pop2015/PLAN_BDY_DWELLING_TYPE_2015.shp")) %>%
+pop2015 <- st_read(here("analysis/data/raw_data/PLAN_BDY_DWELLING_TYPE_2015.shp"), quiet = T) %>%
   st_transform(., crs = 3414) %>% 
   st_make_valid()
 ```
@@ -14,13 +14,14 @@ pop2015 <- read_sf(here("analysis/data/raw_data/pop2015/PLAN_BDY_DWELLING_TYPE_2
 
 ``` r
 #load grid cells 
-grids <- readRDS(here("analysis/data/derived_data/grid_750.rds"))
+grids <- st_read(here("analysis/data/derived_data/spatial_hex_grid.shp"), quiet = T) %>% 
+  st_transform(crs = 3414)
 
 #load inferred home locations 
-hm_apdm <- readRDS(here("analysis/data/derived_data/hm_apdm.rds")) %>% mutate(name = "APDM")
-hm_freq <- readRDS(here("analysis/data/derived_data/hm_freq.rds")) %>% mutate(name = "FREQ")
-hm_hmlc <- readRDS(here("analysis/data/derived_data/hm_hmlc.rds")) %>% mutate(name = "HMLC")
-hm_osna <- readRDS(here("analysis/data/derived_data/hm_osna.rds")) %>% mutate(name = "OSNA")
+hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm.csv")) %>% mutate(name = "APDM")
+hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq.csv")) %>% mutate(name = "FREQ")
+hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc.csv")) %>% mutate(name = "HMLC")
+hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna.csv")) %>% mutate(name = "OSNA")
 hm_all <- bind_rows(hm_apdm, hm_freq, hm_hmlc, hm_osna)
 ```
 

@@ -24,7 +24,7 @@ library(homelocator)
 ### Load de-identified dataset 
 
 ```{r}
-df <- readRDS(here("analysis/data/derived_data/data_anonymized.rds"))
+df <- read_csv(here("analysis/data/derived_data/deidentified_data.csv"))
 ```
 
 
@@ -36,7 +36,9 @@ Recipe 'APDM' (Rein Ahas et al., 2010) calculates both the average and standard 
 
 ```{r neighbors}
 #generate grid neighbors 
-grids <- readRDS(here("analysis/data/derived_data/grid_750.rds"))
+grids <- st_read(here("analysis/data/derived_data/spatial_hex_grid.shp"), quiet = T) %>%
+  st_transform(crs = 3414)
+
 st_queen <- function(a, b = a) st_relate(a, b, pattern = "F***T****")
 neighbors <- st_queen(grids)
 
@@ -69,7 +71,8 @@ hm_apdm <- identify_location(df, user = "u_id", timestamp = "created_at", locati
 Recipe 'FREQ' simply selects the most frequently ‘visited’ location as users' home locations. 
 
 ```{r freq}
-hm_freq <- identify_location(df_anonymized, user = "u_id", timestamp = "created_at", tz = "Asia/Singapore", location = "grid_id", show_n_loc = 1, recipe = "FREQ")
+hm_freq <- identify_location(df, user = "u_id", timestamp = "created_at", location = "grid_id", 
+                             tz = "Asia/Singapore", show_n_loc = 1, recipe = "FREQ")
 ```
 
 ### Recipe: HMLC
@@ -96,9 +99,9 @@ hm_osna <- identify_location(df, user = "u_id", timestamp = "created_at", locati
 The identified homes are in `analysis/data/derived_data`.
 
 ```{r}
-saveRDS(hm_apdm, file = here("analysis/data/derived_data/hm_apdm.rds"))
-saveRDS(hm_freq, file = here("analysis/data/derived_data/hm_freq.rds"))
-saveRDS(hm_hmlc, file = here("analysis/data/derived_data/hm_hmlc.rds"))
-saveRDS(hm_osna, file = here("analysis/data/derived_data/hm_osna.rds"))
+write_csv(hm_apdm, path = here("analysis/data/derived_data/hm_apdm.csv"))
+write_csv(hm_freq, path = here("analysis/data/derived_data/hm_freq.csv"))
+write_csv(hm_hmlc, path = here("analysis/data/derived_data/hm_hmlc.csv"))
+write_csv(hm_osna, path = here("analysis/data/derived_data/hm_osna.csv"))
 ```
 
