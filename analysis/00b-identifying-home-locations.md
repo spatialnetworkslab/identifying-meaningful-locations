@@ -15,7 +15,8 @@ library(homelocator)
 ### Load de-identified dataset
 
 ``` r
-df <- read_csv(here("analysis/data/derived_data/deidentified_data.csv"))
+df <- read_csv(here("analysis/data/derived_data/deidentified_data.csv"), 
+               col_types = cols(grid_id = col_character()))
 ```
 
 ### Recipe: APDM
