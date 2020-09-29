@@ -15,42 +15,43 @@ head(grids)
     ## Simple feature collection with 6 features and 1 field
     ## geometry type:  POLYGON
     ## dimension:      XY
-    ## bbox:           xmin: 15792.54 ymin: 15315.71 xmax: 18417.54 ymax: 17480.77
-    ## CRS:            EPSG:3414
+    ## bbox:           xmin: 2292.538 ymin: 21810.9 xmax: 3417.538 ymax: 27873.08
+    ## projected CRS:  SVY21 / Singapore TM
     ##   grid_id                       geometry
-    ## 1       1 POLYGON ((17292.54 15965.23...
-    ## 2       2 POLYGON ((16917.54 16614.75...
-    ## 3       3 POLYGON ((17667.54 16614.75...
-    ## 4       4 POLYGON ((15792.54 17264.27...
-    ## 5       5 POLYGON ((16542.54 17264.27...
-    ## 6       6 POLYGON ((17292.54 17264.27...
+    ## 1       1 POLYGON ((2667.538 21810.9,...
+    ## 2       2 POLYGON ((2667.538 23109.94...
+    ## 3       3 POLYGON ((2667.538 24408.98...
+    ## 4       4 POLYGON ((2667.538 25708.01...
+    ## 5       5 POLYGON ((2667.538 27007.05...
+    ## 6       6 POLYGON ((3042.538 22460.42...
 
 ### Load de-identified dataset
 
 ``` r
 #de-identified dataset 
-df <- read_csv(here("analysis/data/derived_data/deidentified_data.csv"))
+df <- read_csv(here("analysis/data/derived_data/deidentified_sg_tweets.csv")) %>% 
+  mutate(created_at = with_tz(created_at, tzone = "Asia/Singapore")) # the tweets were sent in Singapore, so must convert the timezone to SGT, the default timezone is UTC! 
 head(df)
 ```
 
     ## # A tibble: 6 x 3
     ##       u_id created_at          grid_id
     ##      <dbl> <dttm>                <dbl>
-    ## 1 33677220 2016-03-24 07:01:53     478
-    ## 2 83769538 2014-01-27 07:10:07    1783
-    ## 3 38521033 2013-06-16 05:21:43     949
-    ## 4 88243722 2012-07-23 02:33:23    1295
-    ## 5 41751665 2013-07-06 01:27:50     523
-    ## 6 36532412 2013-10-12 18:46:27     634
+    ## 1 83048769 2015-04-21 10:31:49     695
+    ## 2 83048769 2015-02-23 20:09:00     734
+    ## 3 83048769 2015-03-04 21:25:37     734
+    ## 4 83048769 2015-03-08 19:47:42     734
+    ## 5 83048769 2015-03-02 20:57:27     734
+    ## 6 83048769 2015-04-16 19:35:37     734
 
 ### Load inferred home locations
 
 ``` r
 #load inferred home locations of four approaches 
-hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm.csv")) %>% mutate(name = "APDM")
-hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq.csv")) %>% mutate(name = "FREQ")
-hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc.csv")) %>% mutate(name = "HMLC")
-hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna.csv")) %>% mutate(name = "OSNA")
+hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm_updated.csv")) %>% mutate(name = "APDM")
+hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq_updated.csv")) %>% mutate(name = "FREQ")
+hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc_updated.csv")) %>% mutate(name = "HMLC")
+hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna_updated.csv")) %>% mutate(name = "OSNA")
 hm_all <- bind_rows(hm_apdm, hm_freq, hm_hmlc, hm_osna)
 head(hm_all)
 ```
@@ -58,61 +59,46 @@ head(hm_all)
     ## # A tibble: 6 x 3
     ##       u_id  home name 
     ##      <dbl> <dbl> <chr>
-    ## 1  3191716   849 APDM 
-    ## 2  4408429  1852 APDM 
-    ## 3 71391177  1126 APDM 
-    ## 4 18690315  1067 APDM 
-    ## 5 19578598  1475 APDM 
-    ## 6 64822321   759 APDM
+    ## 1 42151437  1622 APDM 
+    ## 2 44523269   962 APDM 
+    ## 3 71380694  1449 APDM 
+    ## 4 59406560   559 APDM 
+    ## 5 97357036  1394 APDM 
+    ## 6 80510132  1101 APDM
 
 ### Calculate odds ratio
 
 ``` r
 cal_OR <- function(df_hm, df, grids){
-  #number of users with inferred homes at each grid
-  df_locals_grid <- df_hm %>% 
-      group_by(home) %>% 
-      summarise(n_locals_grid = n_distinct(u_id))
-  
-  #grids that have fewer than 5 home users 
-  grids_fewer5hm <- df_locals_grid %>% 
-      filter(n_locals_grid < 5) %>% 
-      pull(home)
-  
-  #users in grids that have fewer than 5 home users 
-  users_in_grids_fewer5hm <- df_hm %>% 
-      filter(home %in% grids_fewer5hm) %>% 
-      pull(u_id) 
-  
-  #remove those users from inferred home dataset 
-  df_hm_updated <- df_hm %>% filter(!u_id %in% users_in_grids_fewer5hm)
-  
-  #number of users with inferred homes at each grid
-  df_locals_grids <- df_hm_updated %>% 
+  # if a grid has less than 5 identified users, remove users in that grid 
+  df_hm_updated <- df_hm %>% 
     group_by(home) %>% 
-    summarise(n_locals_grid = n_distinct(u_id))
+    mutate(n_locals_hm = n_distinct(u_id)) %>% 
+    ungroup() %>% 
+    filter(n_locals_hm >= 5) %>% 
+    dplyr::select(-n_locals_hm, -name)
+  # users to remove 
+  rm_users <- setdiff(df_hm$u_id, df_hm_updated$u_id)
   
-  #remove those users from de-identified dataset 
-  df_updated <- df %>% filter(!u_id %in% users_in_grids_fewer5hm)
-  
-  df_users_grids <- df_updated %>% 
+  # get users in each grid from tweets dataset
+  df_users_grids <- df %>% 
+    filter(!u_id %in% rm_users) %>% # remove user tweets from dataset 
     dplyr::select(u_id, grid_id) %>% 
-    unique()
+    distinct(u_id, grid_id, .keep_all = TRUE)
   
   #calculate Odds Ratio
   df_OR <- df_users_grids %>% 
-    left_join(., (df_hm_updated %>% select(-name)), by = c("u_id" = "u_id")) %>% 
-    replace(., is.na(.), 0) %>% 
-    mutate(type = if_else(grid_id == home, "local", "visitor")) %>% 
-    group_by(grid_id, type) %>% 
-    dplyr::summarise(n_user = n_distinct(u_id)) %>% 
-    spread(key = "type", value = "n_user") %>% 
-    replace(., is.na(.), 0) %>% 
-    ungroup() %>% 
-    filter(grid_id %in% df_hm_updated$home) %>% 
-    mutate(total_local = sum(local), 
-           total_visitor = sum(visitor)) %>% 
-    mutate(OR = (local/total_local)/(visitor/total_visitor)) 
+      left_join(., df_hm_updated, by = c("u_id" = "u_id")) %>% 
+      replace(., is.na(.), 0) %>% 
+      mutate(type = if_else(grid_id == home, "local", "visitor")) %>% 
+      group_by(grid_id, type) %>% 
+      dplyr::summarise(n_user = n_distinct(u_id)) %>% 
+      spread(key = "type", value = "n_user") %>% 
+      na.omit() %>%
+      ungroup() %>% 
+      mutate(total_local = sum(local), 
+             total_visitor = sum(visitor)) %>% 
+      mutate(OR = (local/total_local)/(visitor/total_visitor)) 
   return(df_OR)
 }
 ```
@@ -177,7 +163,7 @@ spatial_view <- function(grids, df_OR, n = 8, method_nm, breaks){
             title.position = c("left", "top"),
             legend.outside = F,
             legend.position = c("right", "bottom"),
-            legend.hist.height = 0.1,
+            legend.hist.height = 0.08,
             legend.hist.width = 0.3,
             legend.hist.size = 0.5)
 }
@@ -186,7 +172,7 @@ spatial_view <- function(grids, df_OR, n = 8, method_nm, breaks){
 #### APDM
 
 ``` r
-spatial_view(grids, OR_apdm, method_nm = "APDM", breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5))
+spatial_view(grids, OR_apdm, method_nm = "APDM", breaks = c(0, 0.5, 0.8, 1, 1.5, 2, 2.5, 3, 4, 5))
 ```
 
 ![](01-figures-spatial-comparison-of-four-approaches_files/figure-gfm/apdm-1.png)<!-- -->
@@ -194,7 +180,7 @@ spatial_view(grids, OR_apdm, method_nm = "APDM", breaks = c(0, 0.5, 1, 1.5, 2, 2
 #### FREQ
 
 ``` r
-spatial_view(grids, OR_freq, method_nm = "FREQ", breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5))
+spatial_view(grids, OR_freq, method_nm = "FREQ", breaks = c(0, 0.5, 0.8, 1, 1.5, 2, 2.5, 3, 4, 5))
 ```
 
 ![](01-figures-spatial-comparison-of-four-approaches_files/figure-gfm/freq-1.png)<!-- -->
@@ -202,7 +188,7 @@ spatial_view(grids, OR_freq, method_nm = "FREQ", breaks = c(0, 0.5, 1, 1.5, 2, 2
 #### HMLC
 
 ``` r
-spatial_view(grids, OR_hmlc, method_nm = "HMLC", breaks = c(0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5))
+spatial_view(grids, OR_hmlc, method_nm = "HMLC", breaks = c(0, 0.5, 0.8, 1, 1.5, 2, 2.5, 3, 4, 5))
 ```
 
 ![](01-figures-spatial-comparison-of-four-approaches_files/figure-gfm/hmlc-1.png)<!-- -->
@@ -210,7 +196,7 @@ spatial_view(grids, OR_hmlc, method_nm = "HMLC", breaks = c(0, 0.5, 1, 1.5, 2, 2
 #### OSNA
 
 ``` r
-spatial_view(grids, OR_osna, method_nm = "OSNA", breaks = c(0, 0.3, 0.5, 1, 3, 5, 7, 9))
+spatial_view(grids, OR_osna, method_nm = "OSNA", breaks = c(0, 0.5, 0.8, 1, 1.5, 2, 2.5, 3, 4, 5))
 ```
 
 ![](01-figures-spatial-comparison-of-four-approaches_files/figure-gfm/osna-1.png)<!-- -->
