@@ -215,6 +215,10 @@ df <- df_nested %>%
 ## Step 10: Remove users at grids that have fewer than 5 residents
 
 ``` r
+#run four recipes from homelocator package
+#the input dataset is the anonymized dataset at step 9
+#the detail steps for running the four built-in recipes to identify home locations can be found 
+#at '00b-identifying-home-locations`
 #load inferred home locations 
 hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm.csv")) %>% mutate(name = "APDM")
 hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq.csv")) %>% mutate(name = "FREQ")
@@ -242,11 +246,22 @@ users2rm <- hm_all %>%
 
 # remove extracted users from dataset 
 df <- df %>% filter(!u_id %in% users2rm)
+# update inferred home locations 
+## update homelocations 
+hm_apdm_updated <- hm_apdm %>% filter(!u_id %in% users2rm)
+hm_freq_updated <- hm_freq %>% filter(!u_id %in% users2rm)
+hm_hmlc_updated <- hm_hmlc %>% filter(!u_id %in% users2rm)
+hm_osna_updated <- hm_osna %>% filter(!u_id %in% users2rm)
 ```
 
 The de-identified dataset is in `analysis/data/derived_data`.
 
 ``` r
 #save de-identified dataset 
-write_csv(df, file = here("analysis/data/derived_data/deidentified_sg_tweets.csv"))
+write_csv(df, path = here("analysis/data/derived_data/deidentified_sg_tweets.csv"))
+#save updated inferred home locations 
+write_csv(hm_apdm_updated, path = here("analysis/data/derived_data/hm_apdm_updated.csv"))
+write_csv(hm_freq_updated, path = here("analysis/data/derived_data/hm_freq_updated.csv"))
+write_csv(hm_hmlc_updated, path = here("analysis/data/derived_data/hm_hmlc_updated.csv"))
+write_csv(hm_osna_updated, path = here("analysis/data/derived_data/hm_osna_updated.csv"))
 ```
