@@ -21,6 +21,7 @@ data.
 # load your original dataset 
 df <-   readRDS("path_to_original_dataset") %>%
   dplyr::select(u_id, created_at, lon, lat) %>%   # only keep essential information
+  mutate(created_at = with_tz(created_at, tzone = "Asia/Singapore")) %>% #make sure the timestamp is in SGT timezone
   data.table::as.data.table()
 
 # nest dataset by user 
