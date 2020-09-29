@@ -48,10 +48,10 @@ head(df)
 
 ``` r
 #load inferred home locations of four approaches 
-hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm_updated.csv")) %>% mutate(name = "APDM")
-hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq_updated.csv")) %>% mutate(name = "FREQ")
-hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc_updated.csv")) %>% mutate(name = "HMLC")
-hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna_updated.csv")) %>% mutate(name = "OSNA")
+hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm_updated.csv"))
+hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq_updated.csv"))
+hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc_updated.csv"))
+hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna_updated.csv"))
 hm_all <- bind_rows(hm_apdm, hm_freq, hm_hmlc, hm_osna)
 head(hm_all)
 ```
