@@ -19,14 +19,12 @@ data.
 
 ``` r
 # load your original dataset 
-df <- readRDS("path_to_original_dataset") %>% 
-  dplyr::select(u_id, created_at, lon, lat)  # only keep essential information
+df <-   readRDS("path_to_original_dataset") %>%
+  dplyr::select(u_id, created_at, lon, lat) %>%   # only keep essential information
+  data.table::as.data.table()
 
 # nest dataset by user 
-df_nested <- df %>% 
-  group_by(u_id) %>% 
-  nest() %>% 
-  ungroup()
+df_nested <- df %>% nest(data = !u_id) 
 ```
 
 ## Step 1: Remove explicit identifiers
@@ -68,26 +66,29 @@ other users, effectively introducing a small amount of noise.
 
 ``` r
 #tweets pool 
-df_pool <- df_nested %>% unnest(col = data)
+df_pool <- df_nested %>% unnest(col = data) %>% data.table::as.data.table()
+pool_ids <- df_pool$id
 
-swap_tweets <- function(user_id, user_data, df_pool){
+swap_tweets <- function(user_data){
     n_tweets <- nrow(user_data)# number of tweets sent by the user 
     n_keep_tweets <- ceiling(0.95 * n_tweets)  # number of tweets to kept by the user 
     n_swap_tweets <- n_tweets - n_keep_tweets # number of tweets to swap 
-    noise_pool <- df_pool %>% filter(u_id != user_id) #all tweets that sent by other users 
-    df_keep_tweets <- user_data %>% sample_n(., size = n_keep_tweets) 
-    df_noise <- noise_pool %>% 
-      sample_n(., size = n_swap_tweets) %>% 
-      dplyr::select(-u_id)
-    new_user_data <- rbind(df_keep_tweets, df_noise) %>% 
-      mutate(u_id = user_id) %>% 
-      group_by(u_id) %>% 
-      nest() %>% 
-      ungroup()
-    return(new_user_data)
+    # tweets ids from the user 
+    user_tweets_ids <- user_data$id
+    # sampling tweets ids from other users 
+    noise_pool_ids <- setdiff(pool_ids %>% sample(5000), user_tweets_ids)
+    
+    # select 5% random tweets (noise) from the pool
+    random_noise_ids <- sample(noise_pool_ids, size = n_swap_tweets, replace = FALSE)
+    random_noise <- df_pool[id %in% random_noise_ids] %>% dplyr::select(-u_id)
+    
+    # select 95% random tweets from user's tweets 
+    random_user_data <- user_data %>% sample_n(., size = n_keep_tweets) 
+    output <- bind_rows(random_user_data, random_noise)
+    return(output)
 }
 
-df_nested <- do.call(rbind, map2(df_nested$u_id, df_nested$data, with_progress(function(x, y) swap_tweets(x, y, df_pool))))
+df_nested <- df_nested %>% mutate(data = map(data, with_progress(swap_tweets)))
 ```
 
 ## Step 5: Temporal masking
@@ -95,24 +96,20 @@ df_nested <- do.call(rbind, map2(df_nested$u_id, df_nested$data, with_progress(f
 The timestamps are shifted by a random number of seconds.
 
 ``` r
-#make sure the timestamp column is 'dttm' type 
-offset_timestamps <- function(user_id, user_data){
+offset_timestamps <- function(user_data, timestamp){
+  timestamp <- rlang::sym(timestamp)
   user_data %>% 
-    mutate(created_at = as.POSIXct(created_at, format="%Y-%m-%d %H:%M:%S", tz = "Asia/Singapore")) %>% 
-    mutate(noise = runif(nrow(.), min = -3600, max = 3600)) %>% # generate random time is second
-    mutate(hr = hour(created_at)) %>% 
-    mutate(created_at = case_when(
-            hr %in% c(12, 18) ~ created_at + abs(noise), # make sure the shifted time still in the same timeframe 
-            TRUE ~ created_at + noise
-           )) %>% 
-    dplyr::select(-c(noise, hr)) %>% 
-    mutate(u_id = user_id) %>% 
-    group_by(u_id) %>% 
-    nest() %>% 
-    ungroup()
+    mutate(hr = lubridate::hour({{timestamp}}), 
+           min = lubridate::minute({{timestamp}}),
+           noise = runif(nrow(.), min = -3600, max = 3600)) %>%  # generate random time is second
+    mutate({{timestamp}} := case_when(
+      hr == 0 & (noise/60 + min) < 0  ~ {{timestamp}} + abs(noise), # add positive noise avoiding date move to the previous day
+      hr == 23 & (noise/60 + min) >= 59 ~ {{timestamp}} - abs(noise), # add negative noise avoiding date move to the next day
+      TRUE ~ {{timestamp}} + noise
+    )) %>% 
+      dplyr::select(-c(noise, hr, min))
 }
-
-df_nested <- do.call(rbind, map2(df_nested$u_id, df_nested$data, with_progress(function(x, y) offset_timestamps(x, y))))
+df_nested <- df_nested %>% mutate(data = map(data, with_progress(function(x) offset_timestamps(x, timestamp = "created_at_sg"))))
 ```
 
 ## Step 6: Swapping day of the week
@@ -130,24 +127,17 @@ random_wday <- function(day){
   return(random_day)
 }
 
-swap_days <- function(user_id, user_data){
-   user_data %>% 
-    mutate(date = as.Date(created_at),
-           ori_day = lubridate::wday(date, week_start = getOption("lubridate.week.start", 1))) %>% 
+swap_days <- function(user_data, timestamp){
+  timestamp <- rlang::sym(timestamp)
+  user_data %>% 
+    mutate(ori_day = lubridate::wday({{timestamp}}, week_start = getOption("lubridate.week.start", 1))) %>% 
     mutate(random_day = map_dbl(ori_day, random_wday),
            offsets = random_day - ori_day,
-           date = date + offsets,
-           time = strftime(created_at, format="%H:%M:%S")) %>% 
-    unite(created_at, c("date", "time"), sep = " ") %>%
-    mutate(created_at = as.POSIXct(created_at, format="%Y-%m-%d %H:%M:%S")) %>% 
-    dplyr::select(created_at, lon, lat) %>% 
-    mutate(u_id = user_id) %>% 
-    group_by(u_id) %>% 
-    nest() %>% 
-    ungroup()
+           {{timestamp}} := {{timestamp}} + lubridate::days(offsets)) %>% 
+    dplyr::select(-c(ori_day, random_day, offsets))
 }
 
-df_nested <- do.call(rbind, map2(df_nested$u_id, df_nested$data, with_progress(function(x, y) swap_days(x, y))))
+df_nested <- df_nested %>% mutate(data = map(data, with_progress(function(x) swap_days(x, timestamp = "created_at_sg"))))
 ```
 
 ## Step 7 & 8: Geomasking
@@ -186,40 +176,39 @@ offset_point <- function(point){
   return(random_pt)
 }
 
-geomasking <- function(user_id, user_data){
+geomasking <- function(user_data, grids){
   #convert to sf object 
-  user_data_sf <- user_data %>% st_as_sf(., coords = c("lon", "lat"), crs = 3414)
-  #offset points 
-  points <- st_sfc(unlist(map(st_geometry(user_data_sf), offset_point), recursive = FALSE), crs = 3414) %>% as_tibble()
+  user_data_sf <- user_data %>% 
+    st_as_sf(., coords = c("lon", "lat"), crs = 4326) %>% 
+    st_transform(crs = 3414) 
+  #offset points and aggregate point to grid
+  grid_id <- st_sfc(unlist(map(st_geometry(user_data_sf), offset_point), recursive = FALSE), crs = 3414) %>% 
+    st_sf(crs = 3414) %>% # offset points
+    st_join(., grids) %>% # aggregate point to grid 
+    st_set_geometry(NULL) # drop geometry 
   
   user_data_sf %>% 
     st_set_geometry(NULL) %>% # drop original geometry
-    bind_cols(., points) %>% # add shifted geometry
-    st_as_sf() %>% # convert to sf object 
-    st_join(., grids) %>% # aggregate to grid cells 
-    st_set_geometry(NULL) %>% # drop geometry
-    mutate(u_id = user_id) %>% 
-    group_by(u_id) %>% 
-    nest() %>% 
-    ungroup()
+    bind_cols(., grid_id) 
 }
 
-df_nested <- do.call(rbind, map2(df_nested$u_id, df_nested$data, with_progress(function(x, y) geomasking(x, y))))
+df_nested <- df_nested %>% mutate(data = map(data, with_progress(function(x) geomasking(x, grids))))
 ```
 
 ## Step 9: Remove grids with too few users
 
-Remove grids with fewer than 5 visted users.
+Remove grids with fewer than 5 visited users.
 
 ``` r
 df <- df_nested %>% 
-  unnest(cols = "data") %>% 
-  group_by(grid_id) %>% 
-  mutate(n_user = n_distinct(u_id), 
-         n_tweets = n()) %>% 
-  ungroup() %>% 
-  filter(n_user >= 5 & n_tweets >= 5) %>% 
-  dplyr::select(-c(n_user, n_tweets))
+    unnest(cols = "data") %>% 
+    filter(!is.na(grid_id)) %>% 
+    group_by(grid_id) %>% 
+    mutate(n_user = n_distinct(u_id), 
+           n_tweets = n()) %>% 
+    ungroup() %>% 
+    filter(n_user >= 5 & n_tweets >= 5) %>% 
+    dplyr::select(-c(n_user, n_tweets))
 ```
 
 ## Step 10: Remove users at grids that have fewer than 5 residents
@@ -232,41 +221,31 @@ hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc.csv")) %>% mutate(n
 hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna.csv")) %>% mutate(name = "OSNA")
 hm_all <- bind_rows(hm_apdm, hm_freq, hm_hmlc, hm_osna)
 
-#home grids that have fewer than 5 users 
-rm_hm_grids <- hm_all %>% 
-  group_by(home,name) %>% 
-  dplyr::summarise(n_user = n_distinct(u_id)) %>% 
-  filter(n_user < 5) %>% 
-  group_by(name) %>% 
-  nest() %>% 
-  mutate(hm = map(data, function(x) x$home)) %>% 
-  ungroup()
+## get users with home that four recipes matched 
+shared_user_uniqe_hm <- hm_all %>% 
+  group_by(u_id) %>% 
+  dplyr::summarise(n_method = n_distinct(name), 
+                   n_home = n_distinct(home)) %>% 
+  filter(n_method == 4 & n_home == 1)
 
-# extract users whose homes are within these hm grids 
-get_rm_users <- function(df_home, method_nm, df_rm_hm_grids){
-  rm_grids <- df_rm_hm_grids %>% 
-    filter(name == method_nm) %>% 
-    pull(hm) %>% 
-    unlist() %>% 
-    unique()
-  df_home %>% 
-    filter(home %in% rm_grids) %>% 
-    pull(u_id) %>% 
-    unique()
-}
-
-rm_users <- map2(list(hm_osna, hm_hmlc, hm_apdm, hm_freq), list("OSNA", "HMLC", "APDM", "FREQ"), 
-                 function(x, y) get_rm_users(x, y, rm_hm_grids)) %>% 
-  unlist() %>% 
-  unique()
+# get home grids that have less than 5 identified home users
+users2rm <- hm_all %>%
+  filter(u_id %in% shared_user_uniqe_hm$u_id) %>%
+  dplyr::select(u_id, home) %>%
+  distinct(u_id, .keep_all = TRUE) %>%
+  group_by(home) %>%
+  mutate(n_user = n_distinct(u_id)) %>%
+  filter(n_user < 5) %>%
+  ungroup() %>%
+  pull(u_id)
 
 # remove extracted users from dataset 
-df <- df %>% filter(!u_id %in% rm_users)
+df <- df %>% filter(!u_id %in% users2rm)
 ```
 
 The de-identified dataset is in `analysis/data/derived_data`.
 
 ``` r
 #save de-identified dataset 
-write_csv(df, file = here("analysis/data/derived_data/deidentified_data.csv"))
+write_csv(df, file = here("analysis/data/derived_data/deidentified_sg_tweets.csv"))
 ```
