@@ -93,7 +93,10 @@ pop2015 <- st_read(here("analysis/data/raw_data/PLAN_BDY_DWELLING_TYPE_2015.shp"
   st_transform(., crs = 3414) %>% 
   st_make_valid()
 norm_pop2015 <- pop2015 %>% 
-  dplyr::select(PLN_AREA_N, TOTAL) %>% 
+  st_join(norm_home_users, .) %>% 
+  group_by(PLN_AREA_N, TOTAL) %>% 
+  summarise() %>% 
+  ungroup() %>% 
   mutate(norm_total = (TOTAL - min(TOTAL))/(max(TOTAL) - min(TOTAL)))
 ```
 

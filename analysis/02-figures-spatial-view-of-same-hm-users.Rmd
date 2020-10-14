@@ -97,7 +97,10 @@ pop2015 <- st_read(here("analysis/data/raw_data/PLAN_BDY_DWELLING_TYPE_2015.shp"
   st_transform(., crs = 3414) %>% 
   st_make_valid()
 norm_pop2015 <- pop2015 %>% 
-  dplyr::select(PLN_AREA_N, TOTAL) %>% 
+  st_join(norm_home_users, .) %>% 
+  group_by(PLN_AREA_N, TOTAL) %>% 
+  summarise() %>% 
+  ungroup() %>% 
   mutate(norm_total = (TOTAL - min(TOTAL))/(max(TOTAL) - min(TOTAL)))
 ```
 
@@ -158,6 +161,3 @@ map_view(grids, norm_home_users, var_fill = "norm_n_users_home", legend.nm = "No
 ```{r}
 map_view(grids, norm_pop2015, var_fill = "norm_total", legend.nm = "Normalized # of residents", breaks = c(0, 0.03, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0))
 ```
-
-
-
