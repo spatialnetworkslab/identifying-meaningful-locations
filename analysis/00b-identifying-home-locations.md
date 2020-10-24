@@ -15,7 +15,7 @@ library(homelocator)
 ### Load de-identified dataset
 
 ``` r
-df <- read_csv(here("analysis/data/derived_data/deidentified_sg_tweets.csv")) %>% #load deidentified dataset
+df <- read_csv(here("analysis/data/derived_data/deidentified_sg_tweets.csv")) %>% #load de-identified dataset
   mutate(created_at = with_tz(created_at, tzone = "Asia/Singapore")) # the tweets were sent in Singapore, so must convert the timezone to SGT, the default timezone is UTC! 
 ```
 
@@ -23,29 +23,6 @@ df <- read_csv(here("analysis/data/derived_data/deidentified_sg_tweets.csv")) %>
 
 Recipe ‘APDM’ (Rein Ahas et al., 2010) calculates both the average and
 standard deviation timestamps in each location for each user.
-
-#### Generate grid neighbors
-
-The neighbors dataset is in `analysis/data/derived_data`.
-
-``` r
-if(file.exists(here("analysis/data/derived_data/neighbors.rds"))){
-  df_neighbors <- readRDS(here("analysis/data/derived_data/neighbors.rds"))
-}else{
-  #generate grid neighbors 
-  grids <- st_read(here("analysis/data/derived_data/spatial_hex_grid.shp"), quiet = T) %>%
-    st_transform(crs = 3414)
-  st_queen <- function(a, b = a) st_relate(a, b, pattern = "F***T****")
-  neighbors <- st_queen(grids)
-  #convert list to tibble
-  list_to_tibble <- function(index, neighbors){
-    tibble(grid_id = as.character(index)) %>% 
-      mutate(neighbor = list(neighbors[[index]]))
-  }
-  df_neighbors <- do.call(rbind, map(1:length(neighbors), function(x) list_to_tibble(x, neighbors)))
-  saveRDS(df_neighbors, here("analysis/data/derived_data/neighbors.rds"))
-}
-```
 
 ``` r
 #must load neighbors when using APDM recipe 

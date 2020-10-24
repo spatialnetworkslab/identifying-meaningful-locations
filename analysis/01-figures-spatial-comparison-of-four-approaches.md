@@ -48,10 +48,10 @@ head(df)
 
 ``` r
 #load inferred home locations of four approaches 
-hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm_updated.csv"))
-hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq_updated.csv"))
-hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc_updated.csv"))
-hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna_updated.csv"))
+hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm.csv"))
+hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq.csv"))
+hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc.csv"))
+hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna.csv"))
 hm_all <- bind_rows(hm_apdm, hm_freq, hm_hmlc, hm_osna)
 head(hm_all)
 ```
@@ -67,41 +67,6 @@ head(hm_all)
     ## 6 80510132  1101 APDM
 
 ### Calculate odds ratio
-
-``` r
-cal_OR <- function(df_hm, df, grids){
-  # if a grid has less than 5 identified users, remove users in that grid 
-  df_hm_updated <- df_hm %>% 
-    group_by(home) %>% 
-    mutate(n_locals_hm = n_distinct(u_id)) %>% 
-    ungroup() %>% 
-    filter(n_locals_hm >= 5) %>% 
-    dplyr::select(-n_locals_hm, -name)
-  # users to remove 
-  rm_users <- setdiff(df_hm$u_id, df_hm_updated$u_id)
-  
-  # get users in each grid from tweets dataset
-  df_users_grids <- df %>% 
-    filter(!u_id %in% rm_users) %>% # remove user tweets from dataset 
-    dplyr::select(u_id, grid_id) %>% 
-    distinct(u_id, grid_id, .keep_all = TRUE)
-  
-  #calculate Odds Ratio
-  df_OR <- df_users_grids %>% 
-      left_join(., df_hm_updated, by = c("u_id" = "u_id")) %>% 
-      replace(., is.na(.), 0) %>% 
-      mutate(type = if_else(grid_id == home, "local", "visitor")) %>% 
-      group_by(grid_id, type) %>% 
-      dplyr::summarise(n_user = n_distinct(u_id)) %>% 
-      spread(key = "type", value = "n_user") %>% 
-      na.omit() %>%
-      ungroup() %>% 
-      mutate(total_local = sum(local), 
-             total_visitor = sum(visitor)) %>% 
-      mutate(OR = (local/total_local)/(visitor/total_visitor)) 
-  return(df_OR)
-}
-```
 
 The calculated odds ratios are in `analysis/data/derived_data`.
 
@@ -147,27 +112,6 @@ OR_osna <- OR_osna %>% left_join(., grids) %>% st_as_sf()
 ```
 
 ### Geospatial distribution of inferred home locations
-
-``` r
-spatial_view <- function(grids, df_OR, n = 8, method_nm, breaks){
-  tm_shape(grids) +
-  tm_borders(col = "grey") +
-  tm_shape(df_OR) +
-  tm_fill("OR", 
-          palette = "YlOrRd",
-          style = "fixed",
-          breaks = breaks,
-          legend.hist = TRUE,
-          title = "Odds Ratio") +
-  tm_layout(title = method_nm,
-            title.position = c("left", "top"),
-            legend.outside = F,
-            legend.position = c("right", "bottom"),
-            legend.hist.height = 0.08,
-            legend.hist.width = 0.3,
-            legend.hist.size = 0.5)
-}
-```
 
 #### APDM
 

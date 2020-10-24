@@ -16,10 +16,10 @@ grids <-  st_read(here("analysis/data/derived_data/spatial_hex_grid.shp"), quiet
 df_central_region <- st_read(here("analysis/data/raw_data/central_region.shp"), quiet = T) 
 
 #load inferred home locations 
-hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm_updated.csv"))
-hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq_updated.csv"))
-hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc_updated.csv"))
-hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna_updated.csv"))
+hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm.csv"))
+hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq.csv"))
+hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc.csv"))
+hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna.csv"))
 hm_all <- bind_rows(hm_apdm, hm_freq, hm_hmlc, hm_osna)
 head(hm_all)
 ```
@@ -103,43 +103,10 @@ norm_pop2015 <- pop2015 %>%
 ### Geographical distribution of number of tweets (normalized)
 
 ``` r
-map_view <- function(grids, df_normalized, var_fill, df_central, legend.nm, breaks,  show_central = F){
-  tm_basic <- tm_shape(grids) + 
-    tm_borders(col = "grey") + 
-    tm_shape(df_normalized) +
-    tm_fill(var_fill, 
-            palette = "YlOrRd",
-            style = "fixed",
-            breaks = breaks,
-            legend.hist = TRUE,
-            title = legend.nm)
-  
-  tm_adjust <- tm_layout(title.position = c("left", "top"),
-            title.size = 0.7,
-            legend.outside = F,
-            legend.position = c("right", "bottom"),
-            legend.title.size  = 0.7,
-            legend.text.size = 0.55,
-            legend.hist.height = 0.1,
-            legend.hist.width = 0.3,
-            legend.hist.size = 0.5)
-  if(show_central){
-    tm_basic + 
-      tm_shape(df_central) + 
-      tm_borders(col = "black", lty = 2) +
-      tm_adjust
-  } else{
-    tm_basic +
-      tm_adjust
-  }
-}
-```
-
-``` r
 map_view(grids, norm_tweets, var_fill = "norm_n_tweets", legend.nm = "Normalized # of tweets", breaks = c(0, 0.03, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0))
 ```
 
-<img src="02-figures-spatial-view-of-same-hm-users_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
+<img src="02-figures-spatial-view-of-same-hm-users_files/figure-gfm/unnamed-chunk-5-1.png" style="display: block; margin: auto;" />
 
 ### Geographical distribution of number of unique users (normalized)
 
@@ -147,7 +114,7 @@ map_view(grids, norm_tweets, var_fill = "norm_n_tweets", legend.nm = "Normalized
 map_view(grids, norm_users, var_fill = "norm_n_users", df_central_region, legend.nm = "Normalized # of unique users", show_central = T, breaks = c(0, 0.03, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0))
 ```
 
-<img src="02-figures-spatial-view-of-same-hm-users_files/figure-gfm/unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
+<img src="02-figures-spatial-view-of-same-hm-users_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
 
 ### Geographical distribution of number of inferred home locations (normalized)
 
@@ -155,7 +122,7 @@ map_view(grids, norm_users, var_fill = "norm_n_users", df_central_region, legend
 map_view(grids, norm_home_users, var_fill = "norm_n_users_home", legend.nm = "Normalized # of inferred homes", breaks = c(0, 0.03, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0))
 ```
 
-<img src="02-figures-spatial-view-of-same-hm-users_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
+<img src="02-figures-spatial-view-of-same-hm-users_files/figure-gfm/unnamed-chunk-7-1.png" style="display: block; margin: auto;" />
 
 ### Geographical distribution of number of residents
 
@@ -163,4 +130,4 @@ map_view(grids, norm_home_users, var_fill = "norm_n_users_home", legend.nm = "No
 map_view(grids, norm_pop2015, var_fill = "norm_total", legend.nm = "Normalized # of residents", breaks = c(0, 0.03, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7, 0.9, 1.0))
 ```
 
-<img src="02-figures-spatial-view-of-same-hm-users_files/figure-gfm/unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
+<img src="02-figures-spatial-view-of-same-hm-users_files/figure-gfm/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />

@@ -215,15 +215,47 @@ df <- df_nested %>%
 ## Step 10: Remove users at grids that have fewer than 5 residents
 
 ``` r
-#run four recipes from homelocator package
-#the input dataset is the anonymized dataset at step 9
-#the detail steps for running the four built-in recipes to identify home locations can be found 
-#at '00b-identifying-home-locations`
-#load inferred home locations 
-hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm.csv")) %>% mutate(name = "APDM")
-hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq.csv")) %>% mutate(name = "FREQ")
-hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc.csv")) %>% mutate(name = "HMLC")
-hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna.csv")) %>% mutate(name = "OSNA")
+# first, you need to run 4 recipes implemented in homelocator package to get the identified residents at each location
+# the input dataset is the anonymized dataset from step 9
+## Recipe: HMLC
+hm_hmlc <- identify_location(df, user = "u_id", timestamp = "created_at", location = "grid_id", 
+                             tz = "Asia/Singapore", show_n_loc = 1, keep_score = F, recipe = "HMLC")
+## Recipe: OSNA
+hm_osna <- identify_location(df, user = "u_id", timestamp = "created_at", location = "grid_id", 
+                             tz = "Asia/Singapore", show_n_loc = 1, recipe = "OSNA")
+
+## Recipe: FREQ 
+hm_freq <- identify_location(df, user = "u_id", timestamp = "created_at", location = "grid_id", 
+                             tz = "Asia/Singapore", show_n_loc = 1, recipe = "FREQ")
+
+## Recipe: APDM
+### Generate neighbors for locations. This step is necessary for running APDM recipe
+if(file.exists(here("analysis/data/derived_data/neighbors.rds"))){
+  df_neighbors <- readRDS(here("analysis/data/derived_data/neighbors.rds"))
+}else{
+  #generate grid neighbors 
+  grids <- st_read(here("analysis/data/derived_data/spatial_hex_grid.shp"), quiet = T) %>%
+    st_transform(crs = 3414)
+  st_queen <- function(a, b = a) st_relate(a, b, pattern = "F***T****")
+  neighbors <- st_queen(grids)
+  #convert list to tibble
+  list_to_tibble <- function(index, neighbors){
+    tibble(grid_id = as.character(index)) %>% 
+      mutate(neighbor = list(neighbors[[index]]))
+  }
+  df_neighbors <- do.call(rbind, map(1:length(neighbors), function(x) list_to_tibble(x, neighbors)))
+  saveRDS(df_neighbors, here("analysis/data/derived_data/neighbors.rds"))
+}
+hm_apdm <- identify_location(df, user = "u_id", timestamp = "created_at", location = "grid_id", 
+                             tz = "Asia/Singapore", keep_score = F, recipe = "APDM")
+```
+
+``` r
+# Second, you need to remove users at grids that have fewer than 5 residents
+hm_apdm <- hm_apdm %>% mutate(name = "APDM")
+hm_freq <- hm_freq %>% mutate(name = "FREQ")
+hm_hmlc <- hm_hmlc %>% mutate(name = "HMLC")
+hm_osna <- hm_osna %>% mutate(name = "OSNA")
 hm_all <- bind_rows(hm_apdm, hm_freq, hm_hmlc, hm_osna)
 
 ## get users with home that four recipes matched 
@@ -246,12 +278,6 @@ users2rm <- hm_all %>%
 
 # remove extracted users from dataset 
 df <- df %>% filter(!u_id %in% users2rm)
-# update inferred home locations 
-## update homelocations 
-hm_apdm_updated <- hm_apdm %>% filter(!u_id %in% users2rm)
-hm_freq_updated <- hm_freq %>% filter(!u_id %in% users2rm)
-hm_hmlc_updated <- hm_hmlc %>% filter(!u_id %in% users2rm)
-hm_osna_updated <- hm_osna %>% filter(!u_id %in% users2rm)
 ```
 
 The de-identified dataset is in `analysis/data/derived_data`.
@@ -259,9 +285,4 @@ The de-identified dataset is in `analysis/data/derived_data`.
 ``` r
 #save de-identified dataset 
 write_csv(df, path = here("analysis/data/derived_data/deidentified_sg_tweets.csv"))
-#save updated inferred home locations 
-write_csv(hm_apdm_updated, path = here("analysis/data/derived_data/hm_apdm_updated.csv"))
-write_csv(hm_freq_updated, path = here("analysis/data/derived_data/hm_freq_updated.csv"))
-write_csv(hm_hmlc_updated, path = here("analysis/data/derived_data/hm_hmlc_updated.csv"))
-write_csv(hm_osna_updated, path = here("analysis/data/derived_data/hm_osna_updated.csv"))
 ```

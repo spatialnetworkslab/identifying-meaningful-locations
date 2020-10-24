@@ -18,10 +18,10 @@ grids <- st_read(here("analysis/data/derived_data/spatial_hex_grid.shp"), quiet 
   st_transform(crs = 3414)
 
 #load inferred home locations 
-hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm_updated.csv")) 
-hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq_updated.csv"))
-hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc_updated.csv")) 
-hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna_updated.csv")) 
+hm_apdm <- read_csv(here("analysis/data/derived_data/hm_apdm.csv")) 
+hm_freq <- read_csv(here("analysis/data/derived_data/hm_freq.csv"))
+hm_hmlc <- read_csv(here("analysis/data/derived_data/hm_hmlc.csv")) 
+hm_osna <- read_csv(here("analysis/data/derived_data/hm_osna.csv")) 
 hm_all <- bind_rows(hm_apdm, hm_freq, hm_hmlc, hm_osna)
 ```
 
