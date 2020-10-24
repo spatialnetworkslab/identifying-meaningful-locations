@@ -1,12 +1,11 @@
 
-# Identifying meaningful locations in human mobility data: an open-source R package as a framework for comparison and reproducibility
+# Identifying Home Locations in Human Mobility Data: an Open-source R Package for Comparison and Reproducibility
 
 This repository contains the data and code for our paper:
 
-> *Identifying meaningful locations in human mobility data: an
-> open-source R package as a framework for comparison and
-> reproducibility*. International Journal of Geographical Information
-> Science
+> *Identifying Home Locations in Human Mobility Data: an Open-source R
+> Package for Comparison and Reproducibility*. International Journal of
+> Geographical Information Science
 
 This repository contains all the data and code needed to reproduce the
 results and figures in our paper. Although we are not able to share the
@@ -35,6 +34,22 @@ in:
   - [analysis/03-figures-correlation.Rmd](analysis/03-figures-correlation.md):
     The correlation between the normalized number of inferred residents
     and the normalized number of actual residents in Singapore (2015)
+
+Additionally, this repository also includes supplementary documents for
+spatial sensitivity test and comparison between raw and de-identified
+Twitter datasets. As we are not able to share the raw Twitter dataset,
+we only show the detailed analysis procedures and results.
+
+The steps needed to conduct spatial sensitivity test can be found in:
+
+  - [analysis/04-appendix-sensitivity-analysis-on-grid-sizes.Rmd](analysis/04-appendix-sensitivity-analysis-on-grid-sizes.md):
+    Spatial sensitivity test on different grid cell sizes
+
+The steps needed to compare raw and de-identified Twitter datasets can
+be found in:
+
+  - [analysis/05-appendix-comparison-between-raw-and-deidentified-datasets.Rmd](analysis/05-appendix-comparison-between-raw-and-deidentified-datasets.md):
+    Comparison between raw and de-identified Twitter datasets
 
 ### Licenses
 
