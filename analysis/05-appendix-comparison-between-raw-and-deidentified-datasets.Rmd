@@ -66,13 +66,10 @@ cal_shared_users <- function(raw_hm, anonymized_hm){
 }
 
 df_matched <- map2_df(list(raw_apdm, raw_freq, raw_hmlc, raw_osna), list(hm_apdm, hm_freq, hm_hmlc, hm_osna), function(x, y) cal_shared_users(x, y)) %>% 
-  mutate(pct_matched = n_matched/n_shared_users * 100)
+  mutate(pct_matched = round(n_matched/n_shared_users, 4) * 100)
 df_matched %>% 
   rename(Recipe = recipe, `# of shared users` = n_shared_users, `# of matched home locations` = n_matched, `% of matched home locations` = pct_matched) %>% 
-  gt::gt() %>% 
-  gt::tab_header(
-    title = gt::md("Comparison between original and de-identified datasets"),
-  )
+  knitr::kable(., caption = 'Comparison between original and de-identified datasets')
 ```
 
 
@@ -113,11 +110,8 @@ bind_rows(dist_hmlc, dist_apmd, dist_osna, dist_freq) %>%
   group_by(name) %>% 
   dplyr::summarise(median_dist = median(diff_dist)) %>% 
   rename(Recipe = name, `Median shifted distance (km)` = median_dist) %>% 
-  gt::gt() %>% 
-  gt::tab_header(
-    title = "Median shifted distance of identified home locations",
-    subtitle = "Comparison between original and de-identified datasets"
-  )
+  knitr::kable(., 
+    caption = 'Median shifted distance of identified home locations') 
 ```
 
 ```{r}

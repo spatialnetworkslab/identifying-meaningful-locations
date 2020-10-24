@@ -550,6 +550,8 @@ map(intersects_freq, function(x) filter(x, intersect == TRUE)) %>%
 
 ### Comparison: Identified homes
 
+_Note: the percentage is relative to the total number of users in the raw dataset_
+
 ```{r}
 n_residents <- bind_rows(
   count_identified_users(hm_hmlc) %>% mutate(recipe = "HMLC"),
@@ -561,14 +563,15 @@ n_residents_750 <- n_residents %>% filter(size == 750) %>%
   rename(n_user_750 = n_user) %>% 
   dplyr::select(-size)
 
+total_user <- 405552
+
 n_residents %>% 
+  mutate(pct = round(n_user/total_user, 4) * 100) %>% 
+  mutate(n_user = paste0(n_user, " (", pct, "%)")) %>% 
+  dplyr::select(-pct) %>% 
   spread(key = "recipe", value = "n_user") %>% 
   rename("Grid cell size (m)" = size) %>% 
-  gt::gt() %>% 
-  gt::tab_header(
-    title = gt::md("Number of identified homes by different recipes"), 
-    subtitle = gt::md("Grid cell sizes from 250m to 1500m with 250 intervals")
-  )
+  knitr::kable(., caption = "Number of identified homes by different recipes")
 ```
 
 ```{r}
