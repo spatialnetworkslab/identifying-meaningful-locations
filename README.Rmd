@@ -10,14 +10,16 @@ knitr::opts_chunk$set(
   fig.path = "README-"
 )
 # Please put your title here to include it in the file below.
-Title <- "Identifying Home Locations in Human Mobility Data: an Open-source R Package for Comparison and Reproducibility"
+Title <- "Identifying Home Locations in Human Mobility Data: an Open-source R Package for Comparison and Reproducibilityy"
 ```
 
 # Identifying Home Locations in Human Mobility Data: an Open-source R Package for Comparison and Reproducibility
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh///master?urlpath=rstudio)
+
 This repository contains the data and code for our paper:
 
->  _`r Title`_. International Journal of Geographical Information Science
+>  _`r Title`_. International Journal of Geographical Information Science (IJGIS)
 
 This repository contains all the data and code needed to reproduce the results and figures in our paper. Although we are not able to share the raw Twitter data publicly, the aggregated and de-identified Twitter dataset is found in `analysis/data/derived_data/`. The steps taken to produce this aggregated dataset can be found in:
 

@@ -1,11 +1,13 @@
 
 # Identifying Home Locations in Human Mobility Data: an Open-source R Package for Comparison and Reproducibility
 
+[![Binder](https://mybinder.org/badge_logo.svg)](https://mybinder.org/v2/gh///master?urlpath=rstudio)
+
 This repository contains the data and code for our paper:
 
 > *Identifying Home Locations in Human Mobility Data: an Open-source R
-> Package for Comparison and Reproducibility*. International Journal of
-> Geographical Information Science
+> Package for Comparison and Reproducibilityy*. International Journal of
+> Geographical Information Science (IJGIS)
 
 This repository contains all the data and code needed to reproduce the
 results and figures in our paper. Although we are not able to share the
