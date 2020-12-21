@@ -2,5 +2,9 @@
 .Rhistory
 .RData
 .Ruserdata
-analysis/data
 .DS_Store
+analysis/appendix
+analysis/data/derived_data_full
+analysis/data/derived_data/deidentified_sg_tweets.csv
+analysis/data/raw_data/*.rds
+analysis/internal-used-calculation.Rmd
