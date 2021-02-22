@@ -7,7 +7,7 @@ This repository contains the data and code for our paper:
 
 > *Identifying home locations in human mobility data: an open-source R
 > package for comparison and reproducibilityy*. International Journal of
-> Geographical Information Science (IJGIS)
+> Geographical Information Science (IJGIS)[preprint](https://osf.io/preprints/socarxiv/k3jp2)
 
 This repository contains all the data and code needed to reproduce the
 results and figures in our paper. Although we are not able to share the
